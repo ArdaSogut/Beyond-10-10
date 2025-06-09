@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Infinite Impossibility of Perfect Consensus</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .header {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 10px rgba(255, 107, 107, 0.3)); }
+            to { filter: drop-shadow(0 0 20px rgba(78, 205, 196, 0.3)); }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #ffab00;
+            font-style: italic;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .control-panel {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .thought-selector {
+            margin-bottom: 2rem;
+        }
+
+        .thought-selector h3 {
+            color: #4ecdc4;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        select {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        select option {
+            background: #1a1a2e;
+            color: white;
+        }
+
+        .simulation-controls {
+            margin-bottom: 2rem;
+        }
+
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .control-group label {
+            display: block;
+            color: #ffa07a;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        .slider-container {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(90deg, #ff6b6b, #ffab00, #4ecdc4);
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .slider-value {
+            text-align: center;
+            color: #ffab00;
+            font-weight: bold;
+            margin-top: 0.5rem;
+        }
+
+        .button {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 25px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin: 0.5rem 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .stop-button {
+            background: linear-gradient(45deg, #ff4757, #ff3838);
+        }
+
+        .chart-container {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            height: fit-content;
+        }
+
+        .stats-display {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            grid-column: span 2;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffab00;
+            display: block;
+        }
+
+        .stat-label {
+            color: #4ecdc4;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .impossible-line {
+            position: absolute;
+            top: 0;
+            right: 20px;
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0 0 10px 10px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        .philosophy-box {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(78, 205, 196, 0.1));
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 2rem;
+            grid-column: span 2;
+            text-align: center;
+        }
+
+        .philosophy-box h3 {
+            color: #ff6b6b;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .philosophy-text {
+            font-style: italic;
+            line-height: 1.6;
+            color: #e0e0e0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+            
+            .stats-display {
+                grid-column: span 1;
+            }
+            
+            .philosophy-box {
+                grid-column: span 1;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>The Infinite Impossibility of Perfect Consensus</h1>
+        <p class="subtitle">"Even infinity cannot achieve the impossible 10/10"</p>
+    </div>
+
+    <div class="container">
+        <div class="control-panel">
+            <div class="thought-selector">
+                <h3>🧠 Select a Thought to Test</h3>
+                <select id="thoughtSelect">
+                    <optgroup label="Moral Universals">
+                        <option value="0">Killing innocent children is wrong</option>
+                        <option value="1">Torture for entertainment is wrong</option>
+                        <option value="2">Helping others in need is good</option>
+                        <option value="3">Basic human dignity should be respected</option>
+                    </optgroup>
+                    <optgroup label="Common Sense">
+                        <option value="4">Education is important for society</option>
+                        <option value="5">Pollution harms the environment</option>
+                        <option value="6">Exercise is good for health</option>
+                        <option value="7">Fire is hot and dangerous</option>
+                    </optgroup>
+                    <optgroup label="Cultural Values">
+                        <option value="8">Traditional marriage is preferable</option>
+                        <option value="9">Government should provide healthcare</option>
+                        <option value="10">Capitalism is the best economic system</option>
+                        <option value="11">Technology makes life better</option>
+                    </optgroup>
+                    <optgroup label="Polarizing Topics">
+                        <option value="12">Pineapple belongs on pizza</option>
+                        <option value="13">Cats are better than dogs</option>
+                        <option value="14">Social media improves communication</option>
+                        <option value="15">Remote work is more productive</option>
+                    </optgroup>
+                    <optgroup label="Divisive Issues">
+                        <option value="16">Free will is an illusion</option>
+                        <option value="17">Artificial intelligence is dangerous</option>
+                        <option value="18">Climate change is overstated</option>
+                        <option value="19">Privacy is overrated in modern society</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="simulation-controls">
+                <h3 style="color: #4ecdc4; margin-bottom: 1rem;">⚡ Simulation Controls</h3>
+                
+                <div class="control-group">
+                    <label>Simulation Speed</label>
+                    <div class="slider-container">
+                        <input type="range" id="speedSlider" min="1" max="100" value="50">
+                        <div class="slider-value" id="speedValue">50 minds/sec</div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Batch Size (minds per update)</label>
+                    <div class="slider-container">
+                        <input type="range" id="batchSlider" min="100" max="10000" value="1000" step="100">
+                        <div class="slider-value" id="batchValue">1,000 minds</div>
+                    </div>
+                </div>
+
+                <button class="button" id="startButton">🚀 Start Infinite Simulation</button>
+                <button class="button stop-button" id="stopButton">⏹️ Stop Simulation</button>
+                <button class="button" id="resetButton">🔄 Reset Data</button>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="impossible-line">PERFECT 10/10 IMPOSSIBLE</div>
+            <canvas id="consensusChart"></canvas>
+        </div>
+
+        <div class="stats-display">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-value" id="totalMinds">0</span>
+                    <div class="stat-label">Total Minds Surveyed</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="currentMax">0.00</span>
+                    <div class="stat-label">Highest Score Achieved</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="averageScore">0.00</span>
+                    <div class="stat-label">Current Average</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="perfectScores">0</span>
+                    <div class="stat-label">Perfect 10/10 Scores</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="simulationTime">0s</span>
+                    <div class="stat-label">Simulation Time</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="impossibilityProven">∞</span>
+                    <div class="stat-label">Times Impossibility Proven</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="philosophy-box">
+            <h3>🎭 The Eternal Truth</h3>
+            <p class="philosophy-text">
+                Watch as millions, billions, even infinite minds are surveyed, yet perfect consensus remains forever elusive. 
+                The asymptotic dance toward 10/10 reveals a fundamental law of consciousness: 
+                <strong>Even universal truths cannot achieve universal agreement.</strong>
+                In the infinite expanse of human thought, there will always be that one dissenting voice, 
+                keeping perfection forever beyond our reach.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        class InfiniteConsensusApp {
+            constructor() {
+                this.thoughts = [
+                    // Moral Universals
+                    { text: "Killing innocent children is wrong", category: "moral", expectedRange: [9.0, 9.9] },
+                    { text: "Torture for entertainment is wrong", category: "moral", expectedRange: [9.0, 9.9] },
+                    { text: "Helping others in need is good", category: "moral", expectedRange: [9.0, 9.9] },
+                    { text: "Basic human dignity should be respected", category: "moral", expectedRange: [9.0, 9.9] },
+                    
+                    // Common Sense
+                    { text: "Education is important for society", category: "common", expectedRange: [7.0, 9.0] },
+                    { text: "Pollution harms the environment", category: "common", expectedRange: [7.0, 9.0] },
+                    { text: "Exercise is good for health", category: "common", expectedRange: [7.0, 9.0] },
+                    { text: "Fire is hot and dangerous", category: "common", expectedRange: [7.0, 9.0] },
+                    
+                    // Cultural Values
+                    { text: "Traditional marriage is preferable", category: "cultural", expectedRange: [4.0, 7.0] },
+                    { text: "Government should provide healthcare", category: "cultural", expectedRange: [4.0, 7.0] },
+                    { text: "Capitalism is the best economic system", category: "cultural", expectedRange: [4.0, 7.0] },
+                    { text: "Technology makes life better", category: "cultural", expectedRange: [4.0, 7.0] },
+                    
+                    // Polarizing
+                    { text: "Pineapple belongs on pizza", category: "polarizing", expectedRange: [2.0, 8.0] },
+                    { text: "Cats are better than dogs", category: "polarizing", expectedRange: [2.0, 8.0] },
+                    { text: "Social media improves communication", category: "polarizing", expectedRange: [2.0, 8.0] },
+                    { text: "Remote work is more productive", category: "polarizing", expectedRange: [2.0, 8.0] },
+                    
+                    // Divisive
+                    { text: "Free will is an illusion", category: "divisive", expectedRange: [1.0, 9.0] },
+                    { text: "Artificial intelligence is dangerous", category: "divisive", expectedRange: [1.0, 9.0] },
+                    { text: "Climate change is overstated", category: "divisive", expectedRange: [1.0, 9.0] },
+                    { text: "Privacy is overrated in modern society", category: "divisive", expectedRange: [1.0, 9.0] }
+                ];
+
+                this.currentThought = 0;
+                this.isRunning = false;
+                this.totalMinds = 0;
+                this.allScores = [];
+                this.maxScore = 0;
+                this.perfectScores = 0;
+                this.startTime = null;
+                this.animationId = null;
+
+                this.initializeChart();
+                this.bindEvents();
+                this.updateDisplay();
+            }
+
+            initializeChart() {
+                const ctx = document.getElementById('consensusChart').getContext('2d');
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Maximum Score Achieved',
+                            data: [],
+                            borderColor: '#ff6b6b',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4
+                        }, {
+                            label: 'Average Score',
+                            data: [],
+                            borderColor: '#4ecdc4',
+                            backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: 'white'
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: 'white',
+                                bodyColor: 'white'
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Minds Surveyed',
+                                    color: 'white'
+                                },
+                                ticks: {
+                                    color: 'white'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            },
+                            y: {
+                                min: 0,
+                                max: 10.1,
+                                title: {
+                                    display: true,
+                                    text: 'Agreement Score',
+                                    color: 'white'
+                                },
+                                ticks: {
+                                    color: 'white'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            }
+                        },
+                        elements: {
+                            point: {
+                                radius: 0,
+                                hoverRadius: 5
+                            }
+                        }
+                    }
+                });
+
+                this.chart.options.plugins.annotation = {
+                    annotations: {
+                        impossibleLine: {
+                            type: 'line',
+                            yMin: 10,
+                            yMax: 10,
+                            borderColor: 'red',
+                            borderWidth: 3,
+                            borderDash: [10, 5],
+                            label: {
+                                content: 'IMPOSSIBLE PERFECT CONSENSUS',
+                                enabled: true,
+                                position: 'end',
+                                backgroundColor: 'rgba(255, 0, 0, 0.8)',
+                                color: 'white'
+                            }
+                        }
+                    }
+                };
+            }
+
+            generateOpinion(thought) {
+                const category = thought.category;
+                let score = 0;
+
+                switch (category) {
+                    case 'moral':
+                        // 95% high agreement, 5% outliers
+                        if (Math.random() < 0.95) {
+                            score = this.normalRandom(9.2, 0.4);
+                        } else {
+                            score = Math.random() * 6; // Outliers
+                        }
+                        break;
+                    
+                    case 'common':
+                        score = this.gammaRandom(8, 1) + this.normalRandom(0, 1.5);
+                        break;
+                    
+                    case 'cultural':
+                        score = this.normalRandom(5.5 + this.normalRandom(0, 2), 2);
+                        break;
+                    
+                    case 'polarizing':
+                        if (Math.random() < 0.5) {
+                            score = this.normalRandom(3, 1.5);
+                        } else {
+                            score = this.normalRandom(7, 1.5);
+                        }
+                        break;
+                    
+                    case 'divisive':
+                        score = Math.random() * 10;
+                        break;
+                }
+
+                // Add noise and ensure we NEVER hit perfect 10
+                score += this.normalRandom(0, 0.3);
+                score = Math.max(0, Math.min(9.99, score)); // Cap at 9.99!
+
+                // The universal law: ensure some dissent exists in every batch
+                if (Math.random() < 0.001) { // 0.1% chance of strong dissent
+                    score = Math.random() * 4; // Strong disagreement
+                }
+
+                return score;
+            }
+
+            normalRandom(mean, stdDev) {
+                const u1 = Math.random();
+                const u2 = Math.random();
+                const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+                return z0 * stdDev + mean;
+            }
+
+            gammaRandom(shape, scale) {
+                let sum = 0;
+                for (let i = 0; i < shape; i++) {
+                    sum += -Math.log(Math.random());
+                }
+                return sum * scale;
+            }
+
+            simulateMinds(count) {
+                const thought = this.thoughts[this.currentThought];
+                const newScores = [];
+
+                for (let i = 0; i < count; i++) {
+                    const score = this.generateOpinion(thought);
+                    newScores.push(score);
+                    this.allScores.push(score);
+                }
+
+                this.totalMinds += count;
+                this.maxScore = Math.max(this.maxScore, ...newScores);
+                this.perfectScores += newScores.filter(s => s >= 9.99).length;
+
+                // Update chart every 1000 minds or so
+                if (this.totalMinds % 1000 === 0 || this.totalMinds < 10000) {
+                    this.updateChart();
+                }
+
+                this.updateDisplay();
+            }
+
+            updateChart() {
+                const labels = this.chart.data.labels;
+                const maxData = this.chart.data.datasets[0].data;
+                const avgData = this.chart.data.datasets[1].data;
+                let label;
+                if (this.totalMinds >= 1000000) {
+                    label = (this.totalMinds / 1000000).toFixed(1) + 'M';
+                } else if (this.totalMinds >= 1000) {
+                    label = (this.totalMinds / 1000).toFixed(1) + 'K';
+                } else {
+                    label = this.totalMinds.toString();
+                }
+
+                labels.push(label);
+                maxData.push(this.maxScore);
+                avgData.push(this.allScores.reduce((a, b) => a + b, 0) / this.allScores.length);
+
+                // Keep only last 50 data points for performance
+                if (labels.length > 50) {
+                    labels.shift();
+                    maxData.shift();
+                    avgData.shift();
+                }
+
+                this.chart.update('none');
+            }
+
+            updateDisplay() {
+                // Format large numbers
+                const formatNumber = (num) => {
+                    if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
+                    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+                    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+                    return num.toLocaleString();
+                };
+
+                document.getElementById('totalMinds').textContent = formatNumber(this.totalMinds);
+                document.getElementById('currentMax').textContent = this.maxScore.toFixed(3);
+                document.getElementById('averageScore').textContent = this.allScores.length > 0 
+                    ? (this.allScores.reduce((a, b) => a + b, 0) / this.allScores.length).toFixed(3) 
+                    : '0.00';
+                document.getElementById('perfectScores').textContent = '0';
+
+                if (this.startTime) {
+                    const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+                    const hours = Math.floor(elapsed / 3600);
+                    const minutes = Math.floor((elapsed % 3600) / 60);
+                    const seconds = elapsed % 60;
+                    
+                    let timeStr = '';
+                    if (hours > 0) timeStr += hours + 'h ';
+                    if (minutes > 0) timeStr += minutes + 'm ';
+                    timeStr += seconds + 's';
+                    
+                    document.getElementById('simulationTime').textContent = timeStr;
+                }
+
+                // Update the impossibility counter (always infinite)
+                document.getElementById('impossibilityProven').textContent = '∞';
+            }
+
+            animate() {
+                if (!this.isRunning) return;
+
+                const speed = parseInt(document.getElementById('speedSlider').value);
+                const batchSize = parseInt(document.getElementById('batchSlider').value);
+                
+                const mindsThisFrame = Math.floor(batchSize * (speed / 100));
+                this.simulateMinds(mindsThisFrame);
+
+                // Continue animation
+                this.animationId = requestAnimationFrame(() => this.animate());
+            }
+
+            start() {
+                if (this.isRunning) return;
+                
+                this.isRunning = true;
+                this.startTime = Date.now();
+                document.getElementById('startButton').textContent = '🚀 Running...';
+                document.getElementById('startButton').disabled = true;
+                
+                this.animate();
+            }
+
+            stop() {
+                this.isRunning = false;
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+                document.getElementById('startButton').textContent = '🚀 Start Infinite Simulation';
+                document.getElementById('startButton').disabled = false;
+            }
+
+            reset() {
+                this.stop();
+                this.totalMinds = 0;
+                this.allScores = [];
+                this.maxScore = 0;
+                this.perfectScores = 0;
+                this.startTime = null;
+                
+                // Clear chart
+                this.chart.data.labels = [];
+                this.chart.data.datasets[0].data = [];
+                this.chart.data.datasets[1].data = [];
+                this.chart.update();
+                
+                this.updateDisplay();
+            }
+
+            bindEvents() {
+                // Slider value updates
+                document.getElementById('speedSlider').oninput = (e) => {
+                    document.getElementById('speedValue').textContent = e.target.value + ' minds/sec';
+                };
+
+                document.getElementById('batchSlider').oninput = (e) => {
+                    document.getElementById('batchValue').textContent = parseInt(e.target.value).toLocaleString() + ' minds';
+                };
+
+                // Button events
+                document.getElementById('startButton').onclick = () => this.start();
+                document.getElementById('stopButton').onclick = () => this.stop();
+                document.getElementById('resetButton').onclick = () => this.reset();
+
+                // Thought selection
+                document.getElementById('thoughtSelect').onchange = (e) => {
+                    this.currentThought = parseInt(e.target.value);
+                    this.reset(); // Reset when changing thoughts
+                };
+            }
+        }
+
+        // Initialize the app when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            new InfiniteConsensusApp();
+        });
+    </script>
+</body>
+</html>
